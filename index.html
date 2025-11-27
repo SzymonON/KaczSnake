@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gra z wężem</title>
+
+    <style>
+        body {
+            margin: 0;
+            background-image: url(images/backgroung.jpg);
+            
+            
+            font-family: Arial, sans-serif;
+        }
+
+        #plansza {
+            position: relative;
+            width: 1648px;   
+            height: 824px;   
+            border: 4px solid black;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .pole {
+            position: absolute;
+            width: 103px;
+            height: 103px;
+        }
+
+        #punkty {
+
+
+            color: #000;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="plansza" style="margin-left: auto; margin-right: auto;"></div>
+
+<div id="punkty" style="text-align: center; font-family: Comic sans MS; font-size: 40px; margin-top: -20px;"><p>Punkty: 0</p></div>
+
+<script src="https://code.jquery.com/jquery-2.1.0.js"></script>
+
+<script>
+
+const TILE = 103;
+const WIDTH = 16;
+const HEIGHT = 8;
+
+let punkty = 0;
+
+function zrobSzachownice() {
+    const board = document.getElementById("plansza");
+
+    for (let y = 0; y < HEIGHT; y++) {
+        for (let x = 0; x < WIDTH; x++) {
+            let pole = document.createElement("div");
+            pole.classList.add("pole");
+
+            pole.style.left = (x * TILE) + "px";
+            pole.style.top = (y * TILE) + "px";
+
+            let kolor = (x + y) % 2 === 0 ? "#8D99AE" : "#EDF2F4";
+            pole.style.background = kolor;
+
+            board.appendChild(pole);
+        }
+    }
+}
+
+zrobSzachownice();
+
+class Gracz{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+    };
+
+    rysuj() {
+      var autoHtml = '<img src="images/kaczka.png">';
+      this.autoElement = $(autoHtml);
+
+      this.autoElement.css({
+        position: "absolute",
+        width: TILE+"px",
+        height: TILE+"px",
+        left: this.x,
+        top: this.y
+      });
+
+      $("#plansza").append(this.autoElement);
+    };
+
+    setPos(x,y){
+        this.x = x;
+        this.y = y;
+        this.autoElement.css({
+            left: this.x, top: this.y
+        });
+    }
+};
+
+class Jedzonko{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+    };
+    
+    rysuj(losowe) {
+      let losowaLiczba = Math.floor(Math.random() * 100) + 1;
+      if(losowaLiczba < 50){
+        var jedzonkoHtml = '<img src="images/seed.png">';
+      }else{
+        var jedzonkoHtml = '<img src="images/nerlo.gif">';
+      }
+      this.jedzonkoElement = $(jedzonkoHtml);
+
+      this.jedzonkoElement.css({
+        position: "absolute",
+        width: TILE+"px",
+        height: TILE+"px",
+        left: this.x,
+        top: this.y
+      });
+
+      $("#plansza").append(this.jedzonkoElement);
+    };
+
+    sprawdz_kolizje(gx, gy){
+        return (this.x === gx && this.y === gy);
+    }
+
+    zmiana_pozycji(){
+      this.x = TILE * Math.floor(Math.random() * WIDTH);
+      this.y = TILE * Math.floor(Math.random() * HEIGHT);
+
+      this.jedzonkoElement.css({
+        left: this.x,
+        top: this.y
+      });
+    }
+};
+
+class Klon{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+    };
+
+    rysuj() {
+      var klonHtml = '<img src="images/pngegg.png">';
+      this.klonElement = $(klonHtml);
+
+      this.klonElement.css({
+        position: "absolute",
+        width: TILE+"px",
+        height: TILE+"px",
+        left: this.x,
+        top: this.y
+      });
+
+      $("#plansza").append(this.klonElement);
+    };
+
+    ruch_klona(x, y){
+        this.x = x;
+        this.y = y;
+
+        this.klonElement.css({
+            left: this.x,
+            top: this.y
+        });
+    }
+
+    nowy_klon(x,y){
+      const klon = new Klon(x, y);
+      klon.rysuj();
+      klony.push(klon);
+    }
+};
+
+
+const gracz1 = new Gracz(0, 0);
+const seed = new Jedzonko(TILE*2, TILE*2);
+let klony = [];
+
+gracz1.rysuj();
+let losowe = Math.floor(Math.random() * 10);
+seed.rysuj(losowe);
+
+const klon1 = new Klon(-TILE,0);
+klon1.rysuj();
+klony.push(klon1);
+
+
+let kierunek = "prawo";
+
+document.addEventListener("keydown", function(e){
+
+    if(e.key === "ArrowLeft"  && kierunek !== "prawo") kierunek = "lewo";
+    if(e.key === "ArrowRight" && kierunek !== "lewo") kierunek = "prawo";
+    if(e.key === "ArrowUp"    && kierunek !== "dol") kierunek = "gora";
+    if(e.key === "ArrowDown"  && kierunek !== "gora") kierunek = "dol";
+});
+
+
+function kolizjaZCialem(x, y){
+    for(let i=0; i<klony.length; i++){
+        if(klony[i].x === x && klony[i].y === y){
+            return true;
+        }
+    }
+    return false;
+}
+
+function updatePunkty(){
+    punkty++;
+    document.getElementById("punkty").textContent = "Punkty: " + punkty;
+}
+
+function tick(){
+
+    let prevX = gracz1.x;
+    let prevY = gracz1.y;
+
+    if(kierunek === "lewo")  gracz1.setPos(gracz1.x - TILE, gracz1.y);
+    if(kierunek === "prawo") gracz1.setPos(gracz1.x + TILE, gracz1.y);
+    if(kierunek === "gora")  gracz1.setPos(gracz1.x, gracz1.y - TILE);
+    if(kierunek === "dol")   gracz1.setPos(gracz1.x, gracz1.y + TILE);
+    
+    if(gracz1.x < 0 || gracz1.x >= TILE*WIDTH ||
+       gracz1.y < 0 || gracz1.y >= TILE*HEIGHT){
+        alert("KONIEC — uderzyłeś w ścianę!");
+        clearInterval(auto);
+        return;
+    }
+    if(kolizjaZCialem(gracz1.x, gracz1.y)){
+        alert("KONIEC — wpadłeś w swoje ciało!");
+        clearInterval(auto);
+        return;
+    }
+
+    let stare = klony.map(k => ({x:k.x, y:k.y}));
+
+    if(seed.sprawdz_kolizje(gracz1.x, gracz1.y)){
+        updatePunkty();
+        let lastOld = stare[stare.length - 1];
+        klon1.nowy_klon(lastOld.x, lastOld.y);
+        seed.zmiana_pozycji();
+    }
+
+    let px = prevX;
+    let py = prevY;
+
+    for(let i=0; i<klony.length; i++){
+        let tempX = klony[i].x;
+        let tempY = klony[i].y;
+
+        klony[i].ruch_klona(px, py);
+
+        px = tempX;
+        py = tempY;
+    }
+}
+
+let auto = setInterval(tick, 200);
+
+</script>
+
+</body>
+</html>
